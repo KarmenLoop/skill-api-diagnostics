@@ -1,0 +1,9 @@
+{
+  "category": "server",
+  "next_action": "Retry only within budget and the operation's replay contract.",
+  "retry_allowed": true,
+  "retry_delay_seconds": 2,
+  "endpoint": "https://api.example.com/v1/chat/completions",
+  "attempt_count": 1,
+  "remaining_budget_seconds": 26
+}

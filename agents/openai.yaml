@@ -1,0 +1,4 @@
+interface:
+  display_name: "KarmenLoop API Diagnostics"
+  short_description: "API Diagnostics with reproducible local checks"
+  default_prompt: "Use $karmen-api-diagnostics to diagnose these API failures and suggest a safe bounded recovery."

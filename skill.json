@@ -1,0 +1,9 @@
+{
+  "name": "karmen-api-diagnostics",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": "https://github.com/KarmenLoop/skill-api-diagnostics",
+  "entrypoint": "SKILL.md",
+  "runtime": "Python >=3.9",
+  "network": false
+}

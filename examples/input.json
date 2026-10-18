@@ -1,0 +1,14 @@
+{
+  "endpoint": "https://api.example.com/v1/chat/completions",
+  "budget_seconds": 30,
+  "elapsed_seconds": 4,
+  "replay_safe": true,
+  "attempts": [
+    {
+      "id": "1",
+      "status": 503,
+      "error_kind": "none",
+      "retry_after_seconds": 2
+    }
+  ]
+}

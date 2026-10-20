@@ -3,7 +3,7 @@ name: karmen-api-diagnostics
 description: "Classify API failures and choose bounded, replay-aware next steps. Use when an API connection fails, times out, or returns authentication or rate-limit errors."
 metadata:
   author: KarmenLoop
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # API Diagnostics

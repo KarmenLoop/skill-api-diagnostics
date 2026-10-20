@@ -44,6 +44,18 @@ To save a result without overwriting an existing file:
 python3 scripts/run.py --input examples/input.json --output result.json
 ```
 
+### Use a pipeline
+
+Pass `--input -` to read the same JSON format from standard input:
+
+```sh
+cat examples/input.json | python3 scripts/run.py --input -
+python3 scripts/run.py --version
+```
+
+On PowerShell, use `Get-Content -Raw examples/input.json | python scripts/run.py --input -`.
+The input limit and validation are the same for files and pipelines. Add `--output result.json` to save a new file.
+
 ### Install the agent skill
 
 Install it for the agent host you use:

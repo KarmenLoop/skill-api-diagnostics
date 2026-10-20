@@ -79,20 +79,28 @@ def _object(pairs):
     return result
 
 def load_json(path):
-    with Path(path).open("rb") as stream:
-        raw = stream.read(10 * 1024 * 1024 + 1)
+    if path == "-":
+        raw = sys.stdin.buffer.read(10 * 1024 * 1024 + 1)
+    else:
+        with Path(path).open("rb") as stream:
+            raw = stream.read(10 * 1024 * 1024 + 1)
     if len(raw) > 10 * 1024 * 1024:
         raise ValueError("input exceeds 10 MiB; split it into batches")
     def invalid_constant(value):
         raise ValueError("non-finite JSON constant: " + value)
-    value = json.loads(raw.decode("utf-8-sig"), object_pairs_hook=_object, parse_constant=invalid_constant)
+    try:
+        value = json.loads(raw.decode("utf-8-sig"), object_pairs_hook=_object, parse_constant=invalid_constant)
+    except RecursionError as exc:
+        raise ValueError("JSON input is nested too deeply") from exc
     if not isinstance(value, dict):
         raise ValueError("input must be a JSON object")
     return value
 
 def main(process, description):
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("--input", required=True, help="UTF-8 JSON input; see docs/INPUT.md")
+    metadata = json.loads((Path(__file__).resolve().parents[1] / "skill.json").read_text(encoding="utf-8"))
+    parser.add_argument("--version", action="version", version=metadata["name"] + " " + metadata["version"])
+    parser.add_argument("--input", required=True, help="UTF-8 JSON file, or - for stdin; see docs/INPUT.md")
     parser.add_argument("--output", help="new output file; existing files are never overwritten")
     args = parser.parse_args()
     try:

@@ -35,7 +35,7 @@ python3 install.py --host agents
 
 ## 4. 配置真实输入
 
-把 `examples/input.json` 复制为 `my-input.json`，保留 JSON 键名，替换样例内容。根据接口真实约定填写 replay_safe，并记录 elapsed_seconds 和服务端 Retry-After；余额耗尽等硬额度限制使用 quota。 [输入参考（英文）](INPUT.md)列出完整字段和结果键。
+把 `examples/input.json` 复制为 `my-input.json`，保留 JSON 键名，替换样例内容。根据接口真实约定填写 replay_safe，并记录 elapsed_seconds 和服务端 Retry-After；余额耗尽等硬额度限制使用 quota。 [输入参考](input.zh-CN.md)列出完整字段和结果键。
 
 使用 UTF-8 JSON，顶层为对象，最大 10 MiB。不接受重复键、无效 JSON 或非有限数字。涉及时间戳时明确 UTC 偏移，保留原始观察与来源，方便其他人核对。
 
@@ -56,7 +56,7 @@ python3 scripts/run.py --input my-input.json --output my-result.json
 ## 6. 排查问题
 
 - **找不到 Python：** 安装 Python 3.9+，用 `python3 --version` 或 `py -3 --version` 确认。
-- **输入被拒绝或退出码为 2：** 读终端错误信息，核对 JSON 与[字段约定](INPUT.md)。
+- **输入被拒绝或退出码为 2：** 读终端错误信息，核对 JSON 与[字段约定](input.zh-CN.md)。
 - **输出文件已存在：** 先检查或重命名旧结果，再选择新文件名。写入失败可能留下不完整的新文件，应检查后再重试。
 - **宿主看不到技能：** 检查其配置的技能目录并刷新发现；直接运行本地工具，区分宿主设置与输入问题。
 - **结果不符合预期：** 保留原始输入和输出，通过 [Issues](https://github.com/KarmenLoop/skill-api-diagnostics/issues) 提供版本及最小合成样例，先移除私人记录。

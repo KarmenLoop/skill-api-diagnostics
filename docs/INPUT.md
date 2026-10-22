@@ -1,5 +1,7 @@
 # Input and output
 
+English | [简体中文](input.zh-CN.md)
+
 Supply a UTF-8 JSON object (maximum 10 MiB). Use `--input PATH` for a file or `--input -` for standard input. Run `--version` to inspect the installed helper version. Duplicate JSON keys and non-finite JSON constants are rejected. Arrays are required unless documented as optional. IDs must be stable and unique. Dates use ISO 8601; timestamps require an explicit UTC offset.
 
 | Field | Contract |

@@ -25,5 +25,5 @@ for name, digest in proof['files'].items():
     assert hashlib.sha256((root / name).read_bytes()).hexdigest() == digest, name
 result = subprocess.check_output([sys.executable, '-B', 'scripts/run.py', '--input', 'examples/input.json'], cwd=root)
 assert json.loads(result) == json.loads((root / 'examples/expected.json').read_text(encoding='utf-8'))
-assert hashlib.sha256(result).hexdigest() == proof['stdout_sha256']
+assert hashlib.sha256(result.replace(b'\r\n', b'\n')).hexdigest() == proof['stdout_sha256']
 print(json.dumps({'ok': True, 'version': version, 'example': 'matches expected JSON', 'languages': ['en', 'zh-CN']}))

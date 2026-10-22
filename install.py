@@ -16,7 +16,7 @@ def install(destination):
         raise ValueError("destination exists; choose a new directory or remove your old installation yourself")
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.mkdir()
-    for name in ("SKILL.md", "README.md", "LICENSE", "NOTICE.md", "CHANGELOG.md", "CONTRIBUTING.md", "SUPPORT.md", "SECURITY.md", "skill.json", "install.py", "agents", "scripts", "docs", "examples", "tests"):
+    for name in ("SKILL.md", "README.md", "README.zh-CN.md", "LICENSE", "NOTICE.md", "CHANGELOG.md", "CONTRIBUTING.md", "SUPPORT.md", "SECURITY.md", "skill.json", "install.py", "agents", "scripts", "docs", "examples", "tests"):
         item = source / name
         if item.is_dir():
             shutil.copytree(item, destination / name, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))

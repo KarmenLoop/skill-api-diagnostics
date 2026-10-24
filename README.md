@@ -1,60 +1,175 @@
 # API Diagnostics
 
-English | [简体中文](README.zh-CN.md)
+[English](README.md) · [中文](README.zh-CN.md) · **v0.2.1**
 
-Work out what to fix after an API call fails. Feed in recorded attempts, a time budget, and the operation’s replay policy; get a failure category and a bounded retry recommendation.
+[![Release](https://img.shields.io/github/v/release/KarmenLoop/skill-api-diagnostics)](https://github.com/KarmenLoop/skill-api-diagnostics/releases/latest)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Network: offline](https://img.shields.io/badge/helper-offline-lightgrey)](skill.json)
+[![Skill](https://img.shields.io/badge/artifact-agent%20skill-purple)](SKILL.md)
 
-[Download v0.2.1](https://github.com/KarmenLoop/skill-api-diagnostics/releases/tag/v0.2.1) · [Tutorial](docs/tutorial.en.md) · [Input reference](docs/INPUT.md) · [Report an issue](https://github.com/KarmenLoop/skill-api-diagnostics/issues)
+**Classify API failures and choose bounded, replay-aware next steps—from records you already have.**
 
-## What it does
+When a provider returns 401, 429, 503, or a timeout, the hard part is rarely “try again.” It is deciding whether the failure is configuration, authentication, quota, or server-side—and whether repeating the call is even safe under the operation’s contract. **API Diagnostics** is a portable agent skill plus a local Python helper that reads structured attempt records, remaining budget, and an explicit `replay_safe` flag, then emits a failure category with a bounded retry recommendation. It makes **no HTTP requests** and cannot certify provider idempotency.
 
-The sample records one 503 response, leaves 26 seconds, and recommends a 2-second delay because replay_safe is true.
-
-The helper analyzes records; it makes no HTTP requests and cannot establish that replaying an operation is safe.
+Built and maintained by [KarmenLoop](https://github.com/KarmenLoop) / [KARMENLOOP](https://karmenloop.com). Current release: **[v0.2.1](https://github.com/KarmenLoop/skill-api-diagnostics/releases/tag/v0.2.1)**. License: **MIT**.
 
 ![API Diagnostics sample JSON output from version 0.2.1](docs/images/example-output-v0.2.1.svg)
 
 *Actual local output from v0.2.1, rendered as an image. [Complete result](examples/expected.json) · [Image provenance](docs/images/provenance.json).*
 
-## Start here
+[Download v0.2.1](https://github.com/KarmenLoop/skill-api-diagnostics/releases/tag/v0.2.1) · [Tutorial](docs/tutorial.en.md) · [中文教程](docs/tutorial.zh-CN.md) · [Input contract](docs/INPUT.md)
 
-Download `karmen-api-diagnostics-v0.2.1.zip` and its `.sha256` file from the release, verify the hash, then extract the ZIP. In the extracted directory, use Python 3.9 or later:
+---
+
+## Why this exists
+
+Agent sessions often collapse every failure into a vague “retry.” That overwrites the real distinctions: a bad base URL is not a rate limit; a credit hard-stop is not a transient 503; a timeout after dispatch may leave an unknown outcome. This package keeps diagnosis local, deterministic, and honest about what the helper can and cannot know.
+
+---
+
+## Snapshot
+
+| | |
+|---|---|
+| **What you install** | Portable skill (`SKILL.md`, docs, examples) + local helper under `scripts/` |
+| **Package name** | `karmen-api-diagnostics` |
+| **Version** | **0.2.1** (`skill.json`, release tag, `--version`) |
+| **Runtime** | Python **3.9+**, standard library only |
+| **Network** | Helper: **offline** (`"network": false` in `skill.json`) |
+| **Entry** | `python3 scripts/run.py --input …` · optional `python3 install.py --host agents` |
+| **Sample artifact** | [examples/input.json](examples/input.json) → [examples/expected.json](examples/expected.json) |
+| **License** | [MIT](LICENSE) — keep [NOTICE.md](NOTICE.md) with redistributed copies |
+
+---
+
+## Is / Is not
+
+| Is | Is not |
+|---|---|
+| Local failure classifier for supplied API attempt records | Live HTTP client or connection tester |
+| Replay-aware next-action advice when `replay_safe` is accurate | Guarantee of provider idempotency |
+| Portable skill (`SKILL.md`) + stdlib Python helper | Hosted API monitoring SaaS |
+| Budget-aware delay recommendation from elapsed / Retry-After inputs | Automatic payment or mutation replay |
+| Works offline; no model account required for the helper | Permission to send, purchase, or change access |
+
+---
+
+## How it works
+
+Two layers stay separate:
+
+1. **Method layer (skill)** — `SKILL.md` tells an agent how to collect endpoint shape, status, timeout stage, and sanitized error codes without printing secrets; how to set `replay_safe` from the real contract; and how to distinguish a diagnosis from an authorized live recovery.
+2. **Deterministic helper** — `scripts/run.py` + `scripts/runtime.py` read JSON (file or stdin), classify, and print JSON to stdout. Network is off (`skill.json` → `"network": false`). Stdlib only.
+
+### Flow
+
+```mermaid
+flowchart LR
+  A[Attempt records + budget + replay_safe] --> B[scripts/run.py]
+  B --> C{Category}
+  C -->|auth / config| D[Fix before retry]
+  C -->|quota| E[Stop or escalate]
+  C -->|server / transient| F[Bounded delay if replay_safe]
+  C -->|unknown after dispatch| G[Do not auto-replay mutation]
+  D --> H[JSON: next_action + retry_*]
+  E --> H
+  F --> H
+  G --> H
+```
+
+### Sample (v0.2.1)
+
+The bundled sample records one **503**, leaves **26** seconds, and—because `replay_safe` is true—recommends a **2-second** delay (`category: server`, `retry_allowed: true`). See [examples/expected.json](examples/expected.json).
+
+---
+
+## Quickstart
+
+### A. Run the helper (no agent host required)
+
+1. Download `karmen-api-diagnostics-v0.2.1.zip` and its `.sha256` from the [v0.2.1 release](https://github.com/KarmenLoop/skill-api-diagnostics/releases/tag/v0.2.1).
+2. Verify the hash, then extract.
+3. In the extracted directory, with Python 3.9+:
 
 ```sh
 python3 scripts/run.py --version
 python3 scripts/run.py --input examples/input.json
 ```
 
-Expected version: `karmen-api-diagnostics 0.2.1`. The sample records one 503 response, leaves 26 seconds, and recommends a 2-second delay because replay_safe is true.
+Expected version string: `karmen-api-diagnostics 0.2.1`. JSON lands on stdout. Use `--output new-result.json` to keep a copy without overwriting existing files. Pipe mode: `--input -`.
 
-To install the complete skill into a host that reads `~/.agents/skills`:
+### B. Install the portable skill
+
+For hosts that read `~/.agents/skills` (or a project `.agents/skills`):
 
 ```sh
 python3 install.py --host agents
 ```
 
-The installer refuses an existing destination. Host discovery and invocation vary; see the [full setup and practice guide](docs/tutorial.en.md). You can run the helper directly without an AI host.
+The installer **refuses an existing destination**—use a fresh path or remove the old copy first. Host discovery and invocation vary; see [docs/tutorial.en.md](docs/tutorial.en.md). You can keep using the helper directly without any AI host.
 
-## Use it with your own work
+### Use it with your own work
 
-Set replay_safe from the endpoint’s actual contract. Include elapsed_seconds and any provider Retry-After value. Record a hard credit limit as quota.
+- Set `replay_safe` from the **endpoint’s actual contract**, not from optimism.
+- Include `elapsed_seconds` and any provider `Retry-After` value.
+- Record a hard credit limit as **quota**, not as a soft 429.
+- Try a 401, then an exhausted budget; compare `next_action` and `retry_allowed` before wiring callers.
 
-Try a 401 response and then an exhausted budget. Compare next_action and retry_allowed before deciding how your calling application should respond.
+Read [docs/INPUT.md](docs/INPUT.md) before preparing new input. The helper needs no model account, API key, or network connection. An AI host has its own data and permission settings; this skill adds no authority to send, purchase, publish, or change access.
 
-Read the [field contract](docs/INPUT.md) before preparing a new input. The helper runs locally with the Python standard library; it needs no model account, API key, or network connection. An AI host has its own data and permission settings.
+---
 
-## Questions
+## Documentation map
 
-**Will it retry a failed payment?** No. It neither sends requests nor authorizes repeats. A payment’s idempotency rules must come from the payment service.
+| Doc | Use it when you need… |
+|---|---|
+| [Tutorial (EN)](docs/tutorial.en.md) · [中文](docs/tutorial.zh-CN.md) | Download, install, practice, upgrade, remove |
+| [INPUT.md](docs/INPUT.md) · [input.zh-CN.md](docs/input.zh-CN.md) | Field contract |
+| [COMPATIBILITY.md](docs/COMPATIBILITY.md) | Host / runtime notes |
+| [VALIDATION.md](docs/VALIDATION.md) | What checks cover |
+| [SOURCES.md](docs/SOURCES.md) | Provenance pointers |
+| [CHANGELOG.md](CHANGELOG.md) | History through 0.2.1 |
+| [SECURITY.md](SECURITY.md) / [SUPPORT.md](SUPPORT.md) / [CONTRIBUTING.md](CONTRIBUTING.md) | Ops |
 
-**Where does the result go?** JSON is printed to stdout unless you request a new file with `--output`. Existing output files are preserved. The helper reads only the submitted records and any local paths documented in its input contract.
+---
 
-## Documentation and support
+## FAQ
 
-- [Download, install, configure, practice, upgrade, and remove](docs/tutorial.en.md)
-- [Input/output contract](docs/INPUT.md) and [compatibility](docs/COMPATIBILITY.md)
-- [Changelog](CHANGELOG.md), [contributing](CONTRIBUTING.md), [support](SUPPORT.md), and [security reports](SECURITY.md)
+### What is API Diagnostics in one sentence?
 
-## License
+A MIT-licensed agent skill and offline Python helper that classifies supplied API failure records and recommends bounded, replay-aware next steps—without sending any HTTP request.
 
-[MIT](LICENSE). Keep the license and [notice](NOTICE.md) with redistributed copies. Maintained by [KarmenLoop](https://karmenloop.com).
+### Who should use it?
+
+Operators and developers who already capture attempt logs (status, timing, sanitized errors) and want a repeatable classification before deciding whether a caller may retry.
+
+### Will it retry a failed payment?
+
+No. It neither sends requests nor authorizes repeats. Payment idempotency must come from the payment service and your own policy.
+
+### Does installing the skill grant network or credential access?
+
+No. The helper is local and offline. Host tool permissions remain whatever the host already grants; this skill adds none.
+
+### Where does output go?
+
+JSON to stdout by default. Use `--output` with a **new** filename to retain a result; existing files are preserved.
+
+### How does this differ from “ask the model what the error means”?
+
+The helper is deterministic over a published input contract. The skill forbids inventing attempts and forbids treating a fixture result as proof that an external action happened.
+
+### Soft discoverability
+
+Useful phrases that match this repo: **API failure classification**, **replay-safe retry advice**, **offline API diagnostics skill**, **rate-limit and 503 triage for agents**. Avoid stuffing; the substance is in the skill and helper, not keyword density.
+
+---
+
+## License and contact
+
+[MIT](LICENSE). Keep the license and [NOTICE.md](NOTICE.md) with redistributed copies.
+
+Maintainer: [KarmenLoop](https://github.com/KarmenLoop) · Site: [karmenloop.com](https://karmenloop.com)
+
+Issues: [GitHub Issues](https://github.com/KarmenLoop/skill-api-diagnostics/issues) · Support policy: [SUPPORT.md](SUPPORT.md). Prefer synthetic data when filing example bugs.

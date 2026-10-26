@@ -10,13 +10,17 @@ import sys
 root = Path(__file__).resolve().parents[1]
 meta = json.loads((root / 'skill.json').read_text(encoding='utf-8'))
 version = meta['version']
+# Skip fragment-only links and any URI with a scheme (https:, mailto:, tel:, ...).
+# Note: mailto: has no "://", so a "://" check alone is not enough.
+_SCHEME = re.compile(r'^[a-zA-Z][a-zA-Z0-9+.-]*:')
 for name in ('README.md', 'README.zh-CN.md', 'docs/tutorial.en.md', 'docs/tutorial.zh-CN.md'):
     path = root / name
     content = path.read_text(encoding='utf-8')
     assert version in content, name + ': missing current version'
     for target in re.findall(r'\]\(([^)]+)\)', content):
-        if '://' not in target and not target.startswith('#'):
-            assert (path.parent / target.split('#', 1)[0]).exists(), name + ': ' + target
+        if target.startswith('#') or _SCHEME.match(target):
+            continue
+        assert (path.parent / target.split('#', 1)[0]).exists(), name + ': ' + target
 assert 'README.zh-CN.md' in (root / 'install.py').read_text(encoding='utf-8')
 assert 'version: "' + version + '"' in (root / 'SKILL.md').read_text(encoding='utf-8')
 proof = json.loads((root / 'docs/images/provenance.json').read_text(encoding='utf-8'))
